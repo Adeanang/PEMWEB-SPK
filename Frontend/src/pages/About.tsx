@@ -15,7 +15,7 @@ export default function About() {
     {
       icon: <FaLightbulb />,
       title: "Rekomendasi Transparan",
-      desc: "Menggunakan metode Simple Additive Weighting (SAW) — kamu bisa lihat sendiri kenapa sebuah hotel direkomendasikan.",
+      desc: "Menggunakan metode Analytical Hierarchy Process (AHP) — kamu bisa lihat sendiri kenapa sebuah hotel direkomendasikan.",
     },
   ];
 
@@ -27,7 +27,7 @@ export default function About() {
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-cyan-200/20 rounded-full blur-3xl" />
 
         <div className="relative max-w-5xl mx-auto px-6 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold">Tentang WisTour</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">Tentang WisTel</h1>
           <p className="mt-4 text-sky-100">
             Sistem pendukung keputusan pemilihan hotel terbaik, khusus untuk Kota Tegal
           </p>
@@ -36,12 +36,12 @@ export default function About() {
 
       {/* DESKRIPSI */}
       <section className="max-w-5xl mx-auto px-6 py-16 text-center">
-        <h2 className="text-3xl font-bold text-slate-800">Apa itu WisTour?</h2>
+        <h2 className="text-3xl font-bold text-slate-800">Apa itu WisTel?</h2>
         <p className="mt-6 text-slate-600 leading-relaxed">
-          WisTour adalah platform yang membantu kamu memilih hotel terbaik di Kota Tegal.
-          Alih-alih hanya menampilkan daftar hotel, WisTour membandingkan setiap hotel
+          WisTel adalah platform yang membantu kamu memilih hotel terbaik di Kota Tegal.
+          Alih-alih hanya menampilkan daftar hotel, WisTel membandingkan setiap hotel
           menggunakan Sistem Pendukung Keputusan (SPK) metode{" "}
-          <span className="font-semibold">Simple Additive Weighting (SAW)</span> — sehingga
+          <span className="font-semibold">Analytical Hierarchy Process(AHP)</span> — sehingga
           rekomendasi yang muncul benar-benar berdasarkan data, bukan sekadar urutan acak
           atau iklan berbayar.
         </p>
@@ -50,7 +50,7 @@ export default function About() {
       {/* FEATURES */}
       <section className="max-w-6xl mx-auto px-6 pb-20">
         <h2 className="text-3xl font-bold text-center text-slate-800">
-          Kenapa Pakai WisTour?
+          Kenapa Pakai WisTel?
         </h2>
 
         <div className="grid md:grid-cols-3 gap-8 mt-12">
@@ -82,9 +82,10 @@ export default function About() {
           <div>
             <h3 className="text-2xl font-bold text-sky-600">Kenapa Metode SAW?</h3>
             <p className="mt-4 text-slate-600">
-              SAW menormalisasi nilai tiap kriteria lalu menjumlahkannya sesuai bobot,
-              sehingga hasil perankingan mudah ditelusuri dan dijelaskan — cocok untuk
-              keputusan yang butuh transparansi, seperti memilih tempat menginap.
+              AHP menstrukturkan masalah menjadi hierarki dan menghitung bobot kriteria lewat 
+              perbandingan berpasangan, sehingga hasil keputusan akhir memiliki dasar logis yang 
+              terukur secara ilmiah — cocok untuk keputusan kompleks yang butuh objektivitas 
+              tinggi, seperti memilih tempat menginap berdasarkan prioritas yang jelas.
             </p>
           </div>
         </div>

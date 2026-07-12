@@ -27,7 +27,7 @@ const Footer = () => {
       {/* Bottom Footer */}
       <div className="border-t border-sky-900">
         <div className="max-w-7xl mx-auto px-6 py-4 text-center text-sm text-sky-400">
-          © {new Date().getFullYear()} WisTour. All rights reserved.
+          © {new Date().getFullYear()} WisTel. Collaboration Task.
         </div>
       </div>
     </footer>
