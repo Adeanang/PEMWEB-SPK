@@ -4,7 +4,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between">
         {/* Logo / Brand */}
         <div>
-          <h2 className="text-2xl font-bold">WisTour</h2>
+          <h2 className="text-2xl font-bold">WisTel</h2>
           <p className="mt-2 text-sm text-sky-300">
             Rekomendasi Hotel Terbaik di Tegal
           </p>
