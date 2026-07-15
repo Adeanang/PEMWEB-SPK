@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaStar,
   FaMapMarkerAlt,
@@ -44,6 +45,7 @@ function topContributors(result: SAWResult, n = 2) {
 }
 
 export default function Accommodation() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStars, setSelectedStars] = useState<number[]>([]);
   const [selectedHarga, setSelectedHarga] = useState<number | "">("");
@@ -474,7 +476,10 @@ export default function Accommodation() {
                                 )}
                               </button>
                             )}
-                            <button className="bg-sky-500 hover:bg-sky-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-sky-500/20">
+                            <button
+                              onClick={() => navigate(`/hotel/${hotel.id}`)}
+                              className="bg-sky-500 hover:bg-sky-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-sky-500/20"
+                            >
                               Lihat Kamar
                             </button>
                           </div>

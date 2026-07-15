@@ -11,6 +11,7 @@ import MainLayout from "./layout/MainLayout";
 import LoginForm from "./pages/LoginForm";
 import AuthLayout from "./layout/AuthLayout";
 import DashboardLayout from "./layout/DashboardLayout";
+import HotelDetail from "./pages/HotelDetail";
 
 // Admin pages
 import Overview from "./pages/admin/Overview";
@@ -88,6 +89,7 @@ function AppRoutes() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/accommodation" element={<Accommodation />} />
+          <Route path="/hotel/:id" element={<HotelDetail />} />
           <Route path="/about" element={<About />} />
           <Route element={<AuthLayout />}>
             <Route
