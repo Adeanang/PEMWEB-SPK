@@ -19,6 +19,7 @@ export default function UserManagement() {
   const [form, setForm] = useState<UserForm>({ email: '', password: '', role: 'user' });
   const [showPwd, setShowPwd] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const filtered = users.filter((u) => {
     const matchSearch = search.trim() === '' || u.email.toLowerCase().includes(search.toLowerCase());
@@ -39,11 +40,14 @@ export default function UserManagement() {
     setShowPwd(false);
     setModal({ open: true, mode: 'edit', id });
   };
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.email || !form.password) return;
-    if (modal.mode === 'add') addUser(form);
-    else if (modal.id) updateUser(modal.id, form);
-    setModal({ open: false, mode: 'add' });
+    setIsSaving(true);
+    try {
+      if (modal.mode === 'add') await addUser(form);
+      else if (modal.id) await updateUser(modal.id, form);
+      setModal({ open: false, mode: 'add' });
+    } finally { setIsSaving(false); }
   };
 
   return (
@@ -117,7 +121,7 @@ export default function UserManagement() {
                     {u.role}
                   </span>
                 </td>
-                <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">{'•'.repeat(u.password.length)}</td>
+                <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">{'•'.repeat(u.password?.length || 8)}</td>
                 <td className="px-5 py-3.5 text-right">
                   <div className="flex items-center justify-end gap-1">
                     <button onClick={() => openEdit(u)} className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition"><FaEdit size={13} /></button>
@@ -155,7 +159,7 @@ export default function UserManagement() {
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">Role</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(['super admin', 'admin', 'user'] as const).map((r) => (
+                  {(['super admin', 'admin', 'user'] as const).map((r) => ( 
                     <button
                       key={r}
                       onClick={() => setForm({ ...form, role: r })}
@@ -171,7 +175,7 @@ export default function UserManagement() {
             </div>
             <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
               <button onClick={() => setModal({ open: false, mode: 'add' })} className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-              <button onClick={handleSave} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">{modal.mode === 'add' ? 'Tambah' : 'Simpan'}</button>
+              <button onClick={handleSave} disabled={isSaving} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">{isSaving ? 'Menyimpan...' : modal.mode === 'add' ? 'Tambah' : 'Simpan'}</button>
             </div>
           </div>
         </div>
@@ -185,7 +189,13 @@ export default function UserManagement() {
             <p className="text-slate-500 text-sm mt-2">Akun <span className="font-semibold text-slate-700">{users.find((u) => u.id === deleteTarget)?.email}</span> akan dihapus permanen.</p>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600">Batal</button>
-              <button onClick={() => { deleteUser(deleteTarget); setDeleteTarget(null); }} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold">Hapus</button>
+              <button onClick={async () => {
+                setIsSaving(true);
+                try {
+                  if (deleteTarget !== null) await deleteUser(deleteTarget);
+                  setDeleteTarget(null);
+                } finally { setIsSaving(false); }
+              }} disabled={isSaving} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-sm font-semibold">Hapus</button>
             </div>
           </div>
         </div>

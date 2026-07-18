@@ -10,6 +10,7 @@ export default function FasilitasManagement() {
   const [modal, setModal] = useState<{ open: boolean; mode: 'add' | 'edit'; id?: number }>({ open: false, mode: 'add' });
   const [form, setForm] = useState<Omit<FasilitasHotel, 'id'>>({ hotelId: hotels[0]?.id ?? 0, fasilitas: '' });
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const filtered = fasilitasHotels.filter((f) => {
     const matchHotel = filterHotel === '' || f.hotelId === filterHotel;
@@ -19,11 +20,16 @@ export default function FasilitasManagement() {
 
   const openAdd = () => { setForm({ hotelId: hotels[0]?.id ?? 0, fasilitas: '' }); setModal({ open: true, mode: 'add' }); };
   const openEdit = (f: FasilitasHotel) => { const { id, ...rest } = f; setForm(rest); setModal({ open: true, mode: 'edit', id }); };
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.fasilitas.trim()) return;
-    if (modal.mode === 'add') addFasilitas(form);
-    else if (modal.id) updateFasilitas(modal.id, form);
-    setModal({ open: false, mode: 'add' });
+    setIsSaving(true);
+    try {
+      if (modal.mode === 'add') await addFasilitas(form);
+      else if (modal.id) await updateFasilitas(modal.id, form);
+      setModal({ open: false, mode: 'add' });
+    } finally {
+      setIsSaving(false);
+    }
   };
   const getHotelName = (id: number) => hotels.find((h) => h.id === id)?.name ?? '-';
 
@@ -153,7 +159,7 @@ export default function FasilitasManagement() {
             </div>
             <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
               <button onClick={() => setModal({ open: false, mode: 'add' })} className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-              <button onClick={handleSave} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">{modal.mode === 'add' ? 'Tambah' : 'Simpan'}</button>
+              <button onClick={handleSave} disabled={isSaving} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">{isSaving ? 'Menyimpan...' : modal.mode === 'add' ? 'Tambah' : 'Simpan'}</button>
             </div>
           </div>
         </div>
@@ -167,7 +173,13 @@ export default function FasilitasManagement() {
             <p className="text-slate-500 text-sm mt-2">Fasilitas <span className="font-semibold text-slate-700">{fasilitasHotels.find((f) => f.id === deleteTarget)?.fasilitas}</span> akan dihapus.</p>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600">Batal</button>
-              <button onClick={() => { deleteFasilitas(deleteTarget); setDeleteTarget(null); }} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold">Hapus</button>
+              <button onClick={async () => {
+                setIsSaving(true);
+                try {
+                  if (deleteTarget !== null) await deleteFasilitas(deleteTarget);
+                  setDeleteTarget(null);
+                } finally { setIsSaving(false); }
+              }} disabled={isSaving} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-sm font-semibold">Hapus</button>
             </div>
           </div>
         </div>

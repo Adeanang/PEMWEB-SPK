@@ -81,7 +81,7 @@ export interface Hotel {
   name: string;
   location: string;
   sosial_media: string;
-  image_hotel: string;
+  image_hotel: string | null;
   id_user: number;
   lat?: number;
   lng?: number;

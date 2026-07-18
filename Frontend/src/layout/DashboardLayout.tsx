@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../pages/AuthContext';
+import { useAdminStore } from '../store/adminStore';
 import {
   FaHome,
   FaHotel,
@@ -53,7 +54,7 @@ const navGroups: NavGroup[] = [
       { label: 'Kriteria & Bobot', path: '/admin/kriteria', icon: <FaBalanceScale /> },
       { label: 'Sub Kriteria', path: '/admin/sub-kriteria', icon: <FaListUl /> },
       { label: 'Nilai Hotel', path: '/admin/hotel-kriteria', icon: <FaTable /> },
-      { label: 'Perbandingan AHP', path: '/admin/perbandingan', icon: <FaChartBar /> },
+      // { label: 'Perbandingan AHP', path: '/admin/perbandingan', icon: <FaChartBar /> },
     ],
   },
   {
@@ -82,6 +83,11 @@ export default function DashboardLayout() {
   ]);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { fetchAdminData } = useAdminStore();
+
+  useEffect(() => {
+    fetchAdminData();
+  }, []);
 
   const handleLogout = () => {
     logout();

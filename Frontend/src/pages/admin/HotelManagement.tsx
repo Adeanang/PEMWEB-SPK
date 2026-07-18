@@ -25,6 +25,7 @@ export default function HotelManagement() {
   const [modal, setModal] = useState<{ open: boolean; mode: 'add' | 'edit'; id?: number }>({ open: false, mode: 'add' });
   const [form, setForm] = useState<HotelForm>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const filtered = hotels.filter(
     (h) =>
@@ -33,7 +34,11 @@ export default function HotelManagement() {
   );
 
   const openAdd = () => {
-    setForm(emptyForm);
+    setForm({
+      ...emptyForm,
+      id_kategori_hotel: kategoriHotels.length > 0 ? kategoriHotels[0].id : 0,
+      id_user: users.length > 0 ? users[0].id : 0,
+    });
     setModal({ open: true, mode: 'add' });
   };
 
@@ -50,15 +55,23 @@ export default function HotelManagement() {
     setModal({ open: true, mode: 'edit', id: hotel.id });
   };
 
-  const handleSave = () => {
-    const { fasilitas_raw, ...rest } = form;
-    const fasilitas_list = fasilitas_raw.split(',').map((f) => f.trim()).filter(Boolean);
-    if (modal.mode === 'add') {
-      addHotel({ ...rest, fasilitas_list });
-    } else if (modal.id) {
-      updateHotel(modal.id, { ...rest, fasilitas_list });
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const { fasilitas_raw, ...rest } = form;
+      const fasilitas_list = fasilitas_raw.split(',').map((f) => f.trim()).filter(Boolean);
+      if (modal.mode === 'add') {
+        await addHotel({ ...rest, fasilitas_list });
+      } else if (modal.id) {
+        await updateHotel(modal.id, { ...rest, fasilitas_list });
+      }
+      setModal({ open: false, mode: 'add' });
+    } catch (e) {
+      console.error(e);
+      alert("Gagal menyimpan data");
+    } finally {
+      setIsSaving(false);
     }
-    setModal({ open: false, mode: 'add' });
   };
 
   const setNilai = (key: NilaiKey, val: number) =>
@@ -257,7 +270,7 @@ export default function HotelManagement() {
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">URL Gambar Hotel</label>
                 <input
                   type="text"
-                  value={form.image_hotel}
+                  value={form.image_hotel?.toString() || ''}
                   onChange={(e) => setForm({ ...form, image_hotel: e.target.value })}
                   placeholder="https://..."
                   className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
@@ -320,9 +333,10 @@ export default function HotelManagement() {
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20"
+                disabled={isSaving}
+                className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20"
               >
-                {modal.mode === 'add' ? 'Tambah Hotel' : 'Simpan Perubahan'}
+                {isSaving ? 'Menyimpan...' : modal.mode === 'add' ? 'Tambah Hotel' : 'Simpan Perubahan'}
               </button>
             </div>
           </div>
@@ -352,10 +366,19 @@ export default function HotelManagement() {
                 Batal
               </button>
               <button
-                onClick={() => { deleteHotel(deleteTarget); setDeleteTarget(null); }}
-                className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold transition"
+                onClick={async () => {
+                  setIsSaving(true);
+                  try {
+                    await deleteHotel(deleteTarget);
+                    setDeleteTarget(null);
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+                disabled={isSaving}
+                className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-sm font-semibold transition"
               >
-                Hapus
+                {isSaving ? 'Menghapus...' : 'Hapus'}
               </button>
             </div>
           </div>

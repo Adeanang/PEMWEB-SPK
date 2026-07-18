@@ -7,53 +7,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  SUPER_ADMIN
-  ADMIN
-  USER
-}
-
 model User {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  password String
-  role     Role
-
+  id                  Int                  @id @default(autoincrement())
+  email               String               @unique
+  password            String
+  role                Role
+  bookings            Booking[]
   hotels              Hotel[]
   rekomendasiRequests RekomendasiRequest[]
-  bookings Booking[]
 
   @@map("user")
 }
 
 model Hotel {
-  id          Int     @id @default(autoincrement())
-  name        String
-  location    String
-  sosialMedia String? @map("sosial_media")
-  imageHotel  String? @map("image_hotel")
-  lat         Float?
-  lng         Float?
-
-  userId          Int @map("id_user")
-  kategoriHotelId Int @map("id_kategori_hotel")
-
-  user          User          @relation(fields: [userId], references: [id])
-  kategoriHotel KategoriHotel @relation(fields: [kategoriHotelId], references: [id])
-
-  kategoriKamars  KategoriKamar[]
-  kamars          Kamar[]
+  id              Int              @id @default(autoincrement())
+  name            String
+  location        String
+  sosialMedia     String?          @map("sosial_media")
+  imageHotel      String?          @map("image_hotel")
+  lat             Float?
+  lng             Float?
+  userId          Int              @map("id_user")
+  kategoriHotelId Int              @map("id_kategori_hotel")
   fasilitasHotels FasilitasHotel[]
-  hotelKriterias  HotelKriteria[] // ini yang dipakai
+  kategoriHotel   KategoriHotel    @relation(fields: [kategoriHotelId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
+  hotelKriterias  HotelKriteria[]
+  kamars          Kamar[]
+  kategoriKamars  KategoriKamar[]
   resultRequests  ResultRequest[]
 
   @@map("hotel")
 }
 
 model KategoriHotel {
-  id           Int    @id @default(autoincrement())
-  namaKategori String @map("nama_kategori")
-
+  id                  Int                  @id @default(autoincrement())
+  namaKategori        String               @map("nama_kategori")
   hotels              Hotel[]
   rekomendasiRequests RekomendasiRequest[]
 
@@ -66,27 +55,24 @@ model KategoriKamar {
   namaKategori   String  @map("nama_kategori")
   deskripsi      String?
   kapasitasOrang String  @map("kapasitas_orang")
-  hargaMin       Int?
   hargaMax       Int?
-
-  hotel  Hotel   @relation(fields: [hotelId], references: [id])
-  kamars Kamar[]
+  hargaMin       Int?
+  kamars         Kamar[]
+  hotel          Hotel   @relation(fields: [hotelId], references: [id])
 
   @@map("kategori_kamar")
 }
 
 model Kamar {
-  id         Int    @id @default(autoincrement()) @map("id_kamar")
-  hotelId    Int    @map("id_hotel")
-  kategoriId Int    @map("id_kategori")
-  nomorKamar String @map("nomor_kamar")
+  id         Int           @id @default(autoincrement()) @map("id_kamar")
+  hotelId    Int           @map("id_hotel")
+  kategoriId Int           @map("id_kategori")
+  nomorKamar String        @map("nomor_kamar")
+  bookings   Booking[]
+  hotel      Hotel         @relation(fields: [hotelId], references: [id])
+  kategori   KategoriKamar @relation(fields: [kategoriId], references: [id])
 
-  hotel    Hotel         @relation(fields: [hotelId], references: [id])
-  kategori KategoriKamar @relation(fields: [kategoriId], references: [id])
-  bookings Booking[]
-  
   @@unique([hotelId, nomorKamar])
-
   @@map("kamar")
 }
 
@@ -94,141 +80,126 @@ model FasilitasHotel {
   id        Int    @id @default(autoincrement()) @map("id_fasilitas")
   hotelId   Int    @map("id_hotel")
   fasilitas String
-
-  hotel Hotel @relation(fields: [hotelId], references: [id])
+  hotel     Hotel  @relation(fields: [hotelId], references: [id])
 
   @@map("fasilitas_hotel")
 }
+
 model Kriteria {
-  id     Int    @id @default(autoincrement()) @map("id_kriteria")
-  kode String @unique
-  nama   String
-  bobot  Float
-
-  jenis  JenisKriteria
-
-  subKriterias     SubKriteria[]
-  hotelKriterias   HotelKriteria[]
-  requestKriterias RekomendasiReqKriteria[]
-
-  perbandinganSebagaiKriteria1 PerbandinganKriteria[] @relation("Kriteria1")
-  perbandinganSebagaiKriteria2 PerbandinganKriteria[] @relation("Kriteria2")
+  id                           Int                      @id @default(autoincrement()) @map("id_kriteria")
+  kode                         String                   @unique
+  nama                         String
+  bobot                        Float
+  jenis                        JenisKriteria
+  hotelKriterias               HotelKriteria[]
+  perbandinganSebagaiKriteria1 PerbandinganKriteria[]   @relation("Kriteria1")
+  perbandinganSebagaiKriteria2 PerbandinganKriteria[]   @relation("Kriteria2")
+  requestKriterias             RekomendasiReqKriteria[]
+  subKriterias                 SubKriteria[]
 
   @@map("kriteria")
 }
+
 model SubKriteria {
-  id         Int    @id @default(autoincrement()) @map("id_sub")
-  kriteriaId Int    @map("kriteria_id")
+  id         Int      @id @default(autoincrement()) @map("id_sub")
+  kriteriaId Int      @map("kriteria_id")
   value      String
   skor       Float
-
-  kriteria Kriteria @relation(fields: [kriteriaId], references: [id])
+  kriteria   Kriteria @relation(fields: [kriteriaId], references: [id])
 
   @@map("sub_kriteria")
 }
 
 model RekomendasiRequest {
-  id              Int      @id @default(autoincrement()) @map("id_rekomendasi")
-  userId          Int      @map("user_id")
-  kategoriHotelId Int      @map("kategori_hotel_id")
-  createdAt       DateTime @default(now()) @map("created_at")
-
-  user          User          @relation(fields: [userId], references: [id])
-  kategoriHotel KategoriHotel @relation(fields: [kategoriHotelId], references: [id])
-
-  perbandingans PerbandinganKriteria[]
+  id               Int                      @id @default(autoincrement()) @map("id_rekomendasi")
+  userId           Int                      @map("user_id")
+  kategoriHotelId  Int                      @map("kategori_hotel_id")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  perbandingans    PerbandinganKriteria[]
   requestKriterias RekomendasiReqKriteria[]
+  kategoriHotel    KategoriHotel            @relation(fields: [kategoriHotelId], references: [id])
+  user             User                     @relation(fields: [userId], references: [id])
   results          ResultRequest[]
 
   @@map("rekomendasi_request")
 }
 
 model RekomendasiReqKriteria {
-  id            Int   @id @default(autoincrement()) @map("id_req")
-  rekomendasiId Int   @map("id_rekomendasi")
-  kriteriaId    Int   @map("kriteria_id")
+  id            Int                @id @default(autoincrement()) @map("id_req")
+  rekomendasiId Int                @map("id_rekomendasi")
+  kriteriaId    Int                @map("kriteria_id")
   bobot         Float
-
-  rekomendasi RekomendasiRequest @relation(fields: [rekomendasiId], references: [id])
-  kriteria    Kriteria           @relation(fields: [kriteriaId], references: [id])
+  rekomendasi   RekomendasiRequest @relation(fields: [rekomendasiId], references: [id])
+  kriteria      Kriteria           @relation(fields: [kriteriaId], references: [id])
 
   @@map("rekomendasi_req_kriteria")
 }
 
 model ResultRequest {
-  id            Int   @id @default(autoincrement()) @map("id_result")
-  rekomendasiId Int   @map("id_rekomendasi")
-  hotelId       Int   @map("id_hotel")
+  id            Int                @id @default(autoincrement()) @map("id_result")
+  rekomendasiId Int                @map("id_rekomendasi")
+  hotelId       Int                @map("id_hotel")
   score         Float
-  ranking       Int   @map("rangking")
-
-  rekomendasi RekomendasiRequest @relation(fields: [rekomendasiId], references: [id])
-  hotel       Hotel              @relation(fields: [hotelId], references: [id])
+  ranking       Int                @map("rangking")
+  hotel         Hotel              @relation(fields: [hotelId], references: [id])
+  rekomendasi   RekomendasiRequest @relation(fields: [rekomendasiId], references: [id])
 
   @@map("result_request")
 }
 
 model HotelKriteria {
-  id Int @id @default(autoincrement())
-
-  hotelId    Int @map("id_hotel")
-  kriteriaId Int @map("id_kriteria")
-
-  nilai Float
-
-  hotel    Hotel    @relation(fields: [hotelId], references: [id])
-  kriteria Kriteria @relation(fields: [kriteriaId], references: [id])
+  id         Int      @id @default(autoincrement())
+  hotelId    Int      @map("id_hotel")
+  kriteriaId Int      @map("id_kriteria")
+  nilai      Float
+  hotel      Hotel    @relation(fields: [hotelId], references: [id])
+  kriteria   Kriteria @relation(fields: [kriteriaId], references: [id])
 
   @@unique([hotelId, kriteriaId])
   @@map("hotel_kriteria")
 }
+
 model PerbandinganKriteria {
+  id            Int                 @id @default(autoincrement())
+  kriteria1Id   Int
+  kriteria2Id   Int
+  nilai         Float
+  rekomendasiId Int?                @map("id_rekomendasi")
+  rekomendasi   RekomendasiRequest? @relation(fields: [rekomendasiId], references: [id])
+  kriteria1     Kriteria            @relation("Kriteria1", fields: [kriteria1Id], references: [id])
+  kriteria2     Kriteria            @relation("Kriteria2", fields: [kriteria2Id], references: [id])
 
-  id Int @id @default(autoincrement())
-
-  rekomendasiId Int @map("id_rekomendasi")
-
-  kriteria1Id Int
-  kriteria2Id Int
-
-  nilai Float
-
-  rekomendasi RekomendasiRequest @relation(fields: [rekomendasiId], references: [id])
-
-  kriteria1 Kriteria @relation("Kriteria1", fields:[kriteria1Id], references:[id])
-
-  kriteria2 Kriteria @relation("Kriteria2", fields:[kriteria2Id], references:[id])
-
-  @@unique([rekomendasiId,kriteria1Id,kriteria2Id])
-
+  @@unique([rekomendasiId, kriteria1Id, kriteria2Id])
   @@map("perbandingan_kriteria")
 }
 
 model Booking {
-  id          Int      @id @default(autoincrement())
-
-  userId      Int      @map("id_user")
-  kamarId     Int      @map("id_kamar")
-
-  checkIn     DateTime @map("check_in")
-  checkOut    DateTime @map("check_out")
-
-  totalHarga  Int      @map("total_harga")
-
-  status      BookingStatus
-
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  user         User    @relation(fields: [userId], references: [id])
-  kamar        Kamar   @relation(fields: [kamarId], references: [id])
+  id         Int           @id @default(autoincrement())
+  userId     Int           @map("id_user")
+  kamarId    Int           @map("id_kamar")
+  checkIn    DateTime      @map("check_in")
+  checkOut   DateTime      @map("check_out")
+  totalHarga Int           @map("total_harga")
+  status     BookingStatus
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+  kamar      Kamar         @relation(fields: [kamarId], references: [id])
+  user       User          @relation(fields: [userId], references: [id])
 
   @@map("booking")
 }
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
 enum JenisKriteria {
   BENEFIT
   COST
 }
+
 enum BookingStatus {
   PENDING
   CONFIRMED

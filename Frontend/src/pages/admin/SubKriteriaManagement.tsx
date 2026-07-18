@@ -9,6 +9,7 @@ export default function SubKriteriaManagement() {
   const [modal, setModal] = useState<{ open: boolean; mode: 'add' | 'edit'; id?: number }>({ open: false, mode: 'add' });
   const [form, setForm] = useState<Omit<AdminSubKriteria, 'id'>>({ kriteriaId: kriterias[0]?.id_kriteria ?? 1, value: '', skor: 1 });
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const filtered = filterKriteria === ''
     ? subKriterias
@@ -23,11 +24,14 @@ export default function SubKriteriaManagement() {
     setForm(rest);
     setModal({ open: true, mode: 'edit', id });
   };
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.value.trim()) return;
-    if (modal.mode === 'add') addSubKriteria(form);
-    else if (modal.id) updateSubKriteria(modal.id, form);
-    setModal({ open: false, mode: 'add' });
+    setIsSaving(true);
+    try {
+      if (modal.mode === 'add') await addSubKriteria(form);
+      else if (modal.id) await updateSubKriteria(modal.id, form);
+      setModal({ open: false, mode: 'add' });
+    } finally { setIsSaving(false); }
   };
 
   const getKriteriaName = (id: number) => kriterias.find((k) => k.id_kriteria === id)?.nama ?? '-';
@@ -153,8 +157,8 @@ export default function SubKriteriaManagement() {
             </div>
             <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
               <button onClick={() => setModal({ open: false, mode: 'add' })} className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-              <button onClick={handleSave} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">
-                {modal.mode === 'add' ? 'Tambah' : 'Simpan'}
+              <button onClick={handleSave} disabled={isSaving} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">
+                {isSaving ? 'Menyimpan...' : modal.mode === 'add' ? 'Tambah' : 'Simpan'}
               </button>
             </div>
           </div>
@@ -169,7 +173,13 @@ export default function SubKriteriaManagement() {
             <p className="text-slate-500 text-sm mt-2">Data ini akan dihapus permanen.</p>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600">Batal</button>
-              <button onClick={() => { deleteSubKriteria(deleteTarget); setDeleteTarget(null); }} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold">Hapus</button>
+              <button onClick={async () => {
+                setIsSaving(true);
+                try {
+                  if (deleteTarget !== null) await deleteSubKriteria(deleteTarget);
+                  setDeleteTarget(null);
+                } finally { setIsSaving(false); }
+              }} disabled={isSaving} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-sm font-semibold">Hapus</button>
             </div>
           </div>
         </div>

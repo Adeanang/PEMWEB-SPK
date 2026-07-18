@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import api from "../utils/api";
 
 // 1. Definisikan tipe data untuk User sesuai struktur DB kamu
 export interface User {
@@ -10,7 +11,7 @@ export interface User {
 // 2. Definisikan tipe data untuk nilai yang disediakan oleh AuthContext
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, mockUsers: any[]) => { success: boolean; role?: string; message?: string };
+  login: (email: string, password: string) => Promise<{ success: boolean; role?: string; message?: string }>;
   logout: () => void;
   loading: boolean;
 }
@@ -34,29 +35,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLoading(false);
   }, []);
 
-  // Memperbaiki error implicit 'any' pada parameter fungsi login
-  const login = (email: string, password: string, mockUsers: any[]) => {
-    // Memperbaiki error implicit 'any' pada parameter 'u' di method find
-    const foundUser = mockUsers.find(
-      (u: any) => u.email === email && u.password === password
-    );
-
-    if (foundUser) {
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await api.post("/auth/login", { email, password });
+      
       const userData: User = {
-        id: foundUser.id,
-        email: foundUser.email,
-        role: foundUser.role,
+        id: response.data.user.id,
+        email: response.data.user.email,
+        role: response.data.user.role,
       };
+      
       setUser(userData);
       localStorage.setItem("wistour_user", JSON.stringify(userData));
-      return { success: true, role: foundUser.role };
+      localStorage.setItem("token", response.data.token);
+      return { success: true, role: userData.role };
+    } catch (error: any) {
+      return { success: false, message: error.response?.data?.message || "Email atau password salah!" };
     }
-    return { success: false, message: "Email atau password salah!" };
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem("wistour_user");
+    localStorage.removeItem("token");
   };
 
   return (

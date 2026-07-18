@@ -18,14 +18,6 @@ export const authorize =
     }
 
     next();
-
-    if (!roles.includes(user.role)) {
-      return res.status(403).json({
-        message: "Forbidden",
-      });
-    }
-
-    next();
   };
 
 export const adminOnly = (req: Request, res: Response, next: NextFunction) => {
@@ -37,9 +29,9 @@ export const adminOnly = (req: Request, res: Response, next: NextFunction) => {
     });
   }
 
-  if (user.role !== "ADMIN") {
+  if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
     return res.status(403).json({
-      message: "Akses hanya admin",
+      message: "Akses hanya untuk admin",
     });
   }
 

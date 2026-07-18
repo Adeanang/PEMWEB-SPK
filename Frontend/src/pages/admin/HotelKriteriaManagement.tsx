@@ -9,6 +9,7 @@ export default function HotelKriteriaManagement() {
   const [modal, setModal] = useState<{ open: boolean; mode: 'add' | 'edit'; id?: number }>({ open: false, mode: 'add' });
   const [form, setForm] = useState<Omit<HotelKriteria, 'id'>>({ hotelId: hotels[0]?.id ?? 0, kriteriaId: kriterias[0]?.id_kriteria ?? 0, nilai: 0 });
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const currentHotel = hotels.find((h) => h.id === selectedHotel);
   const kriteriaForHotel = hotelKriterias.filter((hk) => hk.hotelId === selectedHotel);
@@ -22,10 +23,13 @@ export default function HotelKriteriaManagement() {
     setForm(rest);
     setModal({ open: true, mode: 'edit', id });
   };
-  const handleSave = () => {
-    if (modal.mode === 'add') addHotelKriteria(form);
-    else if (modal.id) updateHotelKriteria(modal.id, form);
-    setModal({ open: false, mode: 'add' });
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      if (modal.mode === 'add') await addHotelKriteria(form);
+      else if (modal.id) await updateHotelKriteria(modal.id, form);
+      setModal({ open: false, mode: 'add' });
+    } finally { setIsSaving(false); }
   };
 
   const getKriteriaName = (id: number) => kriterias.find((k) => k.id_kriteria === id)?.nama ?? '-';
@@ -181,8 +185,8 @@ export default function HotelKriteriaManagement() {
             </div>
             <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
               <button onClick={() => setModal({ open: false, mode: 'add' })} className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-              <button onClick={handleSave} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">
-                {modal.mode === 'add' ? 'Tambah' : 'Simpan'}
+              <button onClick={handleSave} disabled={isSaving} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">
+                {isSaving ? 'Menyimpan...' : modal.mode === 'add' ? 'Tambah' : 'Simpan'}
               </button>
             </div>
           </div>
@@ -197,7 +201,13 @@ export default function HotelKriteriaManagement() {
             <p className="text-slate-500 text-sm mt-2">Data ini akan dihapus permanen.</p>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600">Batal</button>
-              <button onClick={() => { deleteHotelKriteria(deleteTarget); setDeleteTarget(null); }} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold">Hapus</button>
+              <button onClick={async () => {
+                setIsSaving(true);
+                try {
+                  if (deleteTarget !== null) await deleteHotelKriteria(deleteTarget);
+                  setDeleteTarget(null);
+                } finally { setIsSaving(false); }
+              }} disabled={isSaving} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-sm font-semibold">Hapus</button>
             </div>
           </div>
         </div>

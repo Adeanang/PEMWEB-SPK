@@ -13,6 +13,8 @@ import subkriteriaRoutes from "./routes/subkriteriaRoutes";
 import hotelKriteriaRoutes from "./routes/hotelKriteriaRoutes";
 import recomendationRoutes from "./routes/recomendationRoutes";
 import ahpRoutes from "./routes/ahp.Routes";
+import userRoutes from "./routes/userRoutes";
+import perbandinganRoutes from "./routes/perbandinganKriteriaRoutes";
 
 import { authenticate } from "./middlewares/authMiddlewares";
 
@@ -40,6 +42,8 @@ app.use("/sub-kriteria", subkriteriaRoutes);
 app.use("/hotel-kriteria", hotelKriteriaRoutes);
 app.use("/recommendation", recomendationRoutes);
 app.use("/api/ahp", ahpRoutes);
+app.use("/users", userRoutes);
+app.use("/perbandingan", perbandinganRoutes);
 
 app.get("/", (req, res) => {
   res.json({

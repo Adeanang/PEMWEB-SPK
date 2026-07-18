@@ -8,17 +8,23 @@ export default function KategoriHotelManagement() {
   const [modal, setModal] = useState<{ open: boolean; mode: 'add' | 'edit'; id?: number }>({ open: false, mode: 'add' });
   const [form, setForm] = useState({ nama_kategori: '' });
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const openAdd = () => { setForm({ nama_kategori: '' }); setModal({ open: true, mode: 'add' }); };
   const openEdit = (k: KategoriHotel) => {
     setForm({ nama_kategori: k.nama_kategori });
     setModal({ open: true, mode: 'edit', id: k.id });
   };
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nama_kategori.trim()) return;
-    if (modal.mode === 'add') addKategoriHotel(form);
-    else if (modal.id) updateKategoriHotel(modal.id, form);
-    setModal({ open: false, mode: 'add' });
+    setIsSaving(true);
+    try {
+      if (modal.mode === 'add') await addKategoriHotel({ nama_kategori: form.nama_kategori, deskripsi: '' });
+      else if (modal.id) await updateKategoriHotel(modal.id, { nama_kategori: form.nama_kategori, deskripsi: '' });
+      setModal({ open: false, mode: 'add' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const bintangCount = (nama: string) => Number(nama.replace(/\D/g, '')) || 0;
@@ -113,8 +119,8 @@ export default function KategoriHotelManagement() {
               <button onClick={() => setModal({ open: false, mode: 'add' })} className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">
                 Batal
               </button>
-              <button onClick={handleSave} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">
-                {modal.mode === 'add' ? 'Tambah' : 'Simpan'}
+              <button onClick={handleSave} disabled={isSaving} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">
+                {isSaving ? 'Menyimpan...' : modal.mode === 'add' ? 'Tambah' : 'Simpan'}
               </button>
             </div>
           </div>
@@ -134,7 +140,19 @@ export default function KategoriHotelManagement() {
             </p>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">Batal</button>
-              <button onClick={() => { deleteKategoriHotel(deleteTarget); setDeleteTarget(null); }} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold transition">Hapus</button>
+              <button onClick={async () => {
+                setIsSaving(true);
+                try {
+                  if (deleteTarget !== null) {
+                    await deleteKategoriHotel(deleteTarget);
+                  }
+                  setDeleteTarget(null);
+                } finally {
+                  setIsSaving(false);
+                }
+              }} disabled={isSaving} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-sm font-semibold transition">
+                {isSaving ? 'Menghapus...' : 'Hapus'}
+              </button>
             </div>
           </div>
         </div>

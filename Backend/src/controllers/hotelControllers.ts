@@ -14,6 +14,11 @@ export const getHotels = async (
         kategoriHotel: true,
         kategoriKamars: true,
         fasilitasHotels: true,
+        hotelKriterias: {
+          include: {
+            kriteria: true,
+          },
+        },
       },
     });
 

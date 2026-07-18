@@ -7,6 +7,7 @@ const menus = [
   { name: "Beranda", path: "/" },
   { name: "Cari Hotel", path: "/accommodation" },
   { name: "Tentang", path: "/about" },
+  { name: "Perbandingan", path: "/perbandingan" },
 ];
 
 const Navbar = () => {

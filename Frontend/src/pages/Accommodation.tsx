@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaStar,
@@ -12,14 +12,16 @@ import {
   FaCheckCircle,
   FaBolt,
 } from "react-icons/fa";
-import {
-  hotels as allHotels,
-  defaultKriteria,
-  kategoriHotelList,
-  subKriteriaHarga,
-} from "../data/spkData";
+import api from "../utils/api";
 import { computeSAW, CRITERIA_KEYS } from "../utils/saw";
-import type { Kriteria, CriteriaKey, SAWResult } from "../types/spk";
+import type { Kriteria, CriteriaKey, SAWResult, Hotel, KategoriHotel, SubKriteria } from "../types/spk";
+
+const subKriteriaHarga: SubKriteria[] = [
+  { id_sub: 1, kriteria_id: 1, value: "Sangat Mahal (> Rp500.000)", min: 500000, max: Infinity },
+  { id_sub: 2, kriteria_id: 1, value: "Mahal (Rp350.000 - Rp500.000)", min: 350000, max: 500000 },
+  { id_sub: 3, kriteria_id: 1, value: "Sedang (Rp250.000 - Rp350.000)", min: 250000, max: 350000 },
+  { id_sub: 4, kriteria_id: 1, value: "Murah (< Rp250.000)", min: 0, max: 250000 },
+];
 
 type SortBy = "rekomendasi" | "harga_asc" | "harga_desc" | "rating" | "jarak";
 
@@ -32,11 +34,6 @@ const CRITERIA_LABEL: Record<CriteriaKey, string> = {
   pelayanan: "Pelayanan",
 };
 
-function starCountFromKategori(id: number) {
-  const nama = kategoriHotelList.find((k) => k.id === id)?.nama_kategori ?? "";
-  return Number(nama.replace(/\D/g, "")) || 0;
-}
-
 function topContributors(result: SAWResult, n = 2) {
   return [...CRITERIA_KEYS]
     .sort((a, b) => result.terbobot[b] - result.terbobot[a])
@@ -46,22 +43,96 @@ function topContributors(result: SAWResult, n = 2) {
 
 export default function Accommodation() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [allHotels, setAllHotels] = useState<Hotel[]>([]);
+  const [defaultKriteria, setDefaultKriteria] = useState<Kriteria[]>([]);
+  const [kategoriHotelList, setKategoriHotelList] = useState<KategoriHotel[]>([]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStars, setSelectedStars] = useState<number[]>([]);
   const [selectedHarga, setSelectedHarga] = useState<number | "">("");
   const [selectedFasilitas, setSelectedFasilitas] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortBy>("rekomendasi");
   const [showPreferensi, setShowPreferensi] = useState(false);
-  const [kriteriaList, setKriteriaList] = useState<Kriteria[]>(
-    defaultKriteria.map((k) => ({ ...k }))
-  );
+  const [kriteriaList, setKriteriaList] = useState<Kriteria[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [hotelsRes, kriteriaRes, kategoriRes] = await Promise.all([
+          api.get("/hotels"),
+          api.get("/kriteria"),
+          api.get("/kategori"),
+        ]);
+
+        const mappedKriteria = kriteriaRes.data.data.map((k: any) => {
+          const keyMap: any = { "C1": "harga", "C2": "jarak", "C3": "rating", "C4": "fasilitas", "C5": "kebersihan", "C6": "pelayanan" };
+          const key = keyMap[k.kode] || k.nama.toLowerCase();
+          return {
+            id_kriteria: k.id,
+            kode: k.kode,
+            nama: k.nama,
+            key: key,
+            tipe: k.jenis.toLowerCase(),
+            bobot: k.bobot
+          };
+        });
+
+        const mappedHotels = hotelsRes.data.data.map((h: any) => {
+          const nilai: any = { harga: 0, jarak: 0, rating: 0, fasilitas: 0, kebersihan: 0, pelayanan: 0 };
+          if (h.hotelKriterias) {
+            h.hotelKriterias.forEach((hk: any) => {
+              const keyMap: any = { "C1": "harga", "C2": "jarak", "C3": "rating", "C4": "fasilitas", "C5": "kebersihan", "C6": "pelayanan" };
+              const key = keyMap[hk.kriteria?.kode] || hk.kriteria?.nama?.toLowerCase();
+              if (key && key in nilai) {
+                nilai[key] = hk.nilai || 0;
+              }
+            });
+          }
+
+          return {
+            id: h.id,
+            name: h.name,
+            location: h.location,
+            sosial_media: h.sosialMedia,
+            image_hotel: h.imageHotel,
+            id_user: h.userId,
+            lat: h.lat,
+            lng: h.lng,
+            id_kategori_hotel: h.kategoriHotelId,
+            nilai,
+            fasilitas_list: h.fasilitasHotels ? h.fasilitasHotels.map((f: any) => f.fasilitas || f.nama_fasilitas).filter(Boolean) : [],
+          };
+        });
+
+        setAllHotels(mappedHotels);
+        setDefaultKriteria(mappedKriteria);
+        setKriteriaList(mappedKriteria.map((k: any) => ({ ...k })));
+        setKategoriHotelList(kategoriRes.data.data.map((k: any) => ({
+          id: k.id,
+          nama_kategori: k.namaKategori || k.nama_kategori
+        })));
+      } catch (error) {
+        console.error("Gagal mengambil data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  function starCountFromKategori(id: number) {
+    const nama = kategoriHotelList.find((k) => k.id === id)?.nama_kategori ?? "";
+    return Number(nama.replace(/\D/g, "")) || 0;
+  }
 
   const allFasilitas = useMemo(() => {
     const set = new Set<string>();
     allHotels.forEach((h) => h.fasilitas_list.forEach((f) => set.add(f)));
     return Array.from(set).sort();
-  }, []);
+  }, [allHotels]);
 
   const toggleStar = (id: number) => {
     setSelectedStars((prev) =>
@@ -90,6 +161,8 @@ export default function Accommodation() {
     setSortBy("rekomendasi");
   };
 
+
+
   const filteredHotels = useMemo(() => {
     return allHotels.filter((h) => {
       const matchSearch =
@@ -114,7 +187,7 @@ export default function Accommodation() {
 
       return matchSearch && matchStar && matchHarga && matchFasilitas;
     });
-  }, [searchQuery, selectedStars, selectedHarga, selectedFasilitas]);
+  }, [allHotels, searchQuery, selectedStars, selectedHarga, selectedFasilitas]);
 
   const sawByHotelId = useMemo(() => {
     const results = computeSAW(filteredHotels, kriteriaList);
@@ -151,6 +224,14 @@ export default function Accommodation() {
   }, [filteredHotels, sortBy, sawByHotelId]);
 
   const totalBobot = kriteriaList.reduce((sum, k) => sum + k.bobot, 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-sky-600 font-bold">Memuat data hotel...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
@@ -205,9 +286,8 @@ export default function Accommodation() {
                   <FaBolt className="text-sky-500" /> Apa yang paling penting buatmu?
                 </h3>
                 <p
-                  className={`text-xs mt-1 font-medium ${
-                    totalBobot === 100 ? "text-emerald-600" : "text-amber-600"
-                  }`}
+                  className={`text-xs mt-1 font-medium ${totalBobot === 100 ? "text-emerald-600" : "text-amber-600"
+                    }`}
                 >
                   Total prioritas: {totalBobot}%{" "}
                   {totalBobot !== 100 && "(otomatis diseimbangkan saat dihitung)"}
@@ -371,15 +451,14 @@ export default function Accommodation() {
                 return (
                   <div
                     key={hotel.id}
-                    className={`bg-white rounded-3xl shadow-sm hover:shadow-xl transition duration-300 border overflow-hidden ${
-                      isTopPick ? "border-amber-300 ring-2 ring-amber-100" : "border-slate-100"
-                    }`}
+                    className={`bg-white rounded-3xl shadow-sm hover:shadow-xl transition duration-300 border overflow-hidden ${isTopPick ? "border-amber-300 ring-2 ring-amber-100" : "border-slate-100"
+                      }`}
                   >
                     <div className="flex flex-col sm:flex-row">
                       {/* GAMBAR */}
                       <div className="sm:w-64 h-48 sm:h-auto relative shrink-0">
                         <img
-                          src={hotel.image_hotel}
+                          src={hotel.image_hotel ?? "/images/no-image.png"}
                           alt={hotel.name}
                           className="w-full h-full object-cover"
                         />
@@ -496,10 +575,10 @@ export default function Accommodation() {
                                   {key === "harga"
                                     ? `Rp ${hotel.nilai[key].toLocaleString("id-ID")}`
                                     : key === "jarak"
-                                    ? `${hotel.nilai[key]} km`
-                                    : key === "fasilitas"
-                                    ? `${hotel.nilai[key]} item`
-                                    : hotel.nilai[key].toFixed(1)}
+                                      ? `${hotel.nilai[key]} km`
+                                      : key === "fasilitas"
+                                        ? `${hotel.nilai[key]} item`
+                                        : hotel.nilai[key].toFixed(1)}
                                 </span>
                               </div>
                             ))}

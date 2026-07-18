@@ -12,6 +12,8 @@ import LoginForm from "./pages/LoginForm";
 import AuthLayout from "./layout/AuthLayout";
 import DashboardLayout from "./layout/DashboardLayout";
 import HotelDetail from "./pages/HotelDetail";
+import ErrorBoundary from "./components/ErrorBoundary";
+import PerbandinganAHP from "./pages/PerbandinganAHP";
 
 // Admin pages
 import Overview from "./pages/admin/Overview";
@@ -20,7 +22,6 @@ import KategoriHotelManagement from "./pages/admin/KategoriHotelManagement";
 import KriteriaManagement from "./pages/admin/KriteriaManagement";
 import SubKriteriaManagement from "./pages/admin/SubKriteriaManagement";
 import HotelKriteriaManagement from "./pages/admin/HotelKriteriaManagement";
-import PerbandinganAHP from "./pages/admin/PerbandinganAHP";
 import KamarManagement from "./pages/admin/KamarManagement";
 import FasilitasManagement from "./pages/admin/FasilitasManagement";
 import UserManagement from "./pages/admin/UserManagement";
@@ -61,7 +62,12 @@ function RequireAdmin({ children }: { children: ReactNode }) {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  if (user.role !== "admin" && user.role !== "super admin") {
+  if (
+    user.role !== "admin" &&
+    user.role !== "super admin" &&
+    user.role !== "ADMIN" &&
+    user.role !== "SUPER_ADMIN"
+  ) {
     return <Navigate to="/" replace />;
   }
 
@@ -73,7 +79,8 @@ function RedirectIfLoggedIn({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (user) {
-    return user.role === "admin" || user.role === "super admin"
+    const r = user.role?.toUpperCase() || "";
+    return r === "ADMIN" || r === "SUPER_ADMIN" || r === "SUPER ADMIN"
       ? <Navigate to="/admin" replace />
       : <Navigate to="/" replace />;
   }
@@ -90,11 +97,12 @@ function AppRoutes() {
           <Route path="/" element={<Home />} />
           <Route path="/accommodation" element={<Accommodation />} />
           <Route path="/hotel/:id" element={<HotelDetail />} />
+          <Route path="/perbandingan" element={<PerbandinganAHP />} />
           <Route path="/about" element={<About />} />
           <Route element={<AuthLayout />}>
             <Route
               path="/login"
-              element={
+              element={ 
                 <RedirectIfLoggedIn>
                   <LoginForm />
                 </RedirectIfLoggedIn>
@@ -121,7 +129,6 @@ function AppRoutes() {
           <Route path="kriteria" element={<KriteriaManagement />} />
           <Route path="sub-kriteria" element={<SubKriteriaManagement />} />
           <Route path="hotel-kriteria" element={<HotelKriteriaManagement />} />
-          <Route path="perbandingan" element={<PerbandinganAHP />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="rekomendasi" element={<RekomendasiHistory />} />
         </Route>
@@ -136,8 +143,10 @@ function AppRoutes() {
 // ── Root: AuthProvider membungkus semua routes ──────────────────────────────
 export default function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

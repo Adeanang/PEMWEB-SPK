@@ -1,10 +1,81 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaStar, FaMapMarkerAlt, FaBolt, FaShieldAlt, FaHotel } from "react-icons/fa";
-import { hotels, kategoriHotelList, defaultKriteria } from "../data/spkData";
+import api from "../utils/api";
 import { computeSAW } from "../utils/saw";
+import type { Hotel, KategoriHotel, Kriteria } from "../types/spk";
 
 export default function Home() {
   const navigate = useNavigate();
+  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [kategoriHotelList, setKategoriHotelList] = useState<KategoriHotel[]>([]);
+  const [defaultKriteria, setDefaultKriteria] = useState<Kriteria[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [hotelsRes, kriteriaRes, kategoriRes] = await Promise.all([
+          api.get("/hotels"),
+          api.get("/kriteria"),
+          api.get("/kategori"),
+        ]);
+        
+        const mappedKriteria = kriteriaRes.data.data.map((k: any) => {
+           const keyMap: any = { "C1": "harga", "C2": "jarak", "C3": "rating", "C4": "fasilitas", "C5": "kebersihan", "C6": "pelayanan" };
+           const key = keyMap[k.kode] || k.nama.toLowerCase();
+           return {
+             id_kriteria: k.id,
+             kode: k.kode,
+             nama: k.nama,
+             key: key,
+             tipe: k.jenis.toLowerCase(),
+             bobot: k.bobot
+           };
+        });
+        
+        const mappedHotels = hotelsRes.data.data.map((h: any) => {
+          const nilai: any = { harga: 0, jarak: 0, rating: 0, fasilitas: 0, kebersihan: 0, pelayanan: 0 };
+          if (h.hotelKriterias) {
+            h.hotelKriterias.forEach((hk: any) => {
+              const keyMap: any = { "C1": "harga", "C2": "jarak", "C3": "rating", "C4": "fasilitas", "C5": "kebersihan", "C6": "pelayanan" };
+              const key = keyMap[hk.kriteria?.kode] || hk.kriteria?.nama?.toLowerCase();
+              if (key && key in nilai) {
+                nilai[key] = hk.nilai || 0;
+              }
+            });
+          }
+          
+          return {
+            id: h.id,
+            name: h.name,
+            location: h.location,
+            sosial_media: h.sosialMedia,
+            image_hotel: h.imageHotel,
+            id_user: h.userId,
+            lat: h.lat,
+            lng: h.lng,
+            id_kategori_hotel: h.kategoriHotelId,
+            nilai,
+            fasilitas_list: h.fasilitasHotels ? h.fasilitasHotels.map((f: any) => f.fasilitas || f.nama_fasilitas).filter(Boolean) : [],
+          };
+        });
+
+        setHotels(mappedHotels);
+        setDefaultKriteria(mappedKriteria);
+        setKategoriHotelList(kategoriRes.data.data.map((k: any) => ({
+          id: k.id,
+          nama_kategori: k.namaKategori || k.nama_kategori
+        })));
+      } catch (error) {
+        console.error("Gagal mengambil data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const statistics = [
     { value: `${hotels.length}+`, label: "Hotel Terdaftar di Tegal" },
@@ -14,6 +85,14 @@ export default function Home() {
 
   // Rekomendasi teratas dihitung otomatis pakai metode SAW (bobot default)
   const topPicks = computeSAW(hotels, defaultKriteria).slice(0, 3);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-sky-600 font-bold">Memuat data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-50 min-h-screen">

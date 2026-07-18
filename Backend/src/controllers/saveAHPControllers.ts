@@ -1,17 +1,15 @@
 import { Request, Response } from "express";
 import { savePerbandingan } from "./services/saveAhp.service";
 
-export const saveAHP = async (
-  req: Request,
-  res: Response
-) => {
-
+export const saveAHP = async (req: Request, res: Response) => {
   try {
+    console.log("BODY =", req.body);
 
-    const {
-      rekomendasiId,
-      comparisons
-    } = req.body;
+    const { rekomendasiId, comparisons } = req.body;
+
+    console.log("rekomendasiId =", rekomendasiId);
+    console.log("comparisons =", comparisons);
+
 
     if (!comparisons || comparisons.length === 0) {
       return res.status(400).json({

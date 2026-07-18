@@ -3,6 +3,7 @@ import { FaPlus, FaEdit, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
 import { useAdminStore } from '../../store/adminStore';
 import type { KategoriKamar } from '../../store/adminStore';
 
+
 export default function KamarManagement() {
   const { hotels, kategoriKamars, kamars, addKategoriKamar, updateKategoriKamar, deleteKategoriKamar, addKamar, updateKamar, deleteKamar } = useAdminStore();
   const [activeTab, setActiveTab] = useState<'kategori' | 'kamar'>('kategori');
@@ -17,10 +18,13 @@ export default function KamarManagement() {
   const [kamarModal, setKamarModal] = useState<{ open: boolean; mode: 'add' | 'edit'; id?: number }>({ open: false, mode: 'add' });
   const [kamarForm, setKamarForm] = useState({ hotelId: hotels[0]?.id ?? 0, kategoriId: 0, nomorKamar: '' });
   const [kamarDelete, setKamarDelete] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const filteredKategori = kategoriKamars.filter((k) => k.hotelId === selectedHotel);
   const filteredKamar = kamars.filter((k) => k.hotelId === selectedHotel);
   const availableKategori = kategoriKamars.filter((k) => k.hotelId === selectedHotel);
+
+  
 
   return (
     <div className="space-y-5 max-w-6xl">
@@ -161,7 +165,16 @@ export default function KamarManagement() {
             </div>
             <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
               <button onClick={() => setKategoriModal({ open: false, mode: 'add' })} className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-              <button onClick={() => { if (kategoriModal.mode === 'add') addKategoriKamar(kategoriForm); else if (kategoriModal.id) updateKategoriKamar(kategoriModal.id, kategoriForm); setKategoriModal({ open: false, mode: 'add' }); }} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">{kategoriModal.mode === 'add' ? 'Tambah' : 'Simpan'}</button>
+              <button onClick={async () => {
+                setIsSaving(true);
+                try {
+                  if (kategoriModal.mode === 'add') await addKategoriKamar(kategoriForm);
+                  else if (kategoriModal.id) await updateKategoriKamar(kategoriModal.id, kategoriForm);
+                  setKategoriModal({ open: false, mode: 'add' });
+                } finally { setIsSaving(false); }
+              }} disabled={isSaving} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20 disabled:opacity-50">
+                {isSaving ? 'Menyimpan...' : kategoriModal.mode === 'add' ? 'Tambah' : 'Simpan'}
+              </button>
             </div>
           </div>
         </div>
@@ -184,7 +197,16 @@ export default function KamarManagement() {
             </div>
             <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
               <button onClick={() => setKamarModal({ open: false, mode: 'add' })} className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-              <button onClick={() => { if (kamarModal.mode === 'add') addKamar(kamarForm); else if (kamarModal.id) updateKamar(kamarModal.id, kamarForm); setKamarModal({ open: false, mode: 'add' }); }} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">{kamarModal.mode === 'add' ? 'Tambah' : 'Simpan'}</button>
+              <button onClick={async () => {
+                setIsSaving(true);
+                try {
+                  if (kamarModal.mode === 'add') await addKamar(kamarForm);
+                  else if (kamarModal.id) await updateKamar(kamarModal.id, kamarForm);
+                  setKamarModal({ open: false, mode: 'add' });
+                } finally { setIsSaving(false); }
+              }} disabled={isSaving} className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20 disabled:opacity-50">
+                {isSaving ? 'Menyimpan...' : kamarModal.mode === 'add' ? 'Tambah' : 'Simpan'}
+              </button>
             </div>
           </div>
         </div>
@@ -199,10 +221,15 @@ export default function KamarManagement() {
             <p className="text-slate-500 text-sm mt-2">Data ini akan dihapus permanen.</p>
             <div className="flex gap-3 mt-6">
               <button onClick={() => { setKategoriDelete(null); setKamarDelete(null); }} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600">Batal</button>
-              <button onClick={() => {
-                if (kategoriDelete !== null) { deleteKategoriKamar(kategoriDelete); setKategoriDelete(null); }
-                if (kamarDelete !== null) { deleteKamar(kamarDelete); setKamarDelete(null); }
-              }} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold">Hapus</button>
+              <button onClick={async () => {
+                setIsSaving(true);
+                try {
+                  if (kategoriDelete !== null) { await deleteKategoriKamar(kategoriDelete); setKategoriDelete(null); }
+                  if (kamarDelete !== null) { await deleteKamar(kamarDelete); setKamarDelete(null); }
+                } finally { setIsSaving(false); }
+              }} disabled={isSaving} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-sm font-semibold">
+                {isSaving ? 'Menghapus...' : 'Hapus'}
+              </button>
             </div>
           </div>
         </div>

@@ -7,23 +7,18 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  // Data User dummy diambil langsung dari rancangan DB Anda
-  const mockUsersFromDB = [
-    { id: 1, email: "anang@gmail.com", password: "anang1234", role: "super admin" },
-    { id: 2, email: "kurniawan@gmail.com", password: "kurni1234", role: "admin" },
-    { id: 3, email: "wawanpride@gmail.com", password: "wawan1234", role: "user" },
-    { id: 4, email: "gunawan1234@gmail.com", password: "gunawan123", role: "admin" },
-  ];
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
-    const result = login(email, password, mockUsersFromDB);
+    const result = await login(email, password);
     if (result.success) {
       // Redirect sesuai role atau ke beranda
-      alert(`Login berhasil sebagai ${result.role}!`);
-      window.location.href = "/";
+      if (result.role === 'admin' || result.role === 'super admin') {
+        window.location.href = "/admin";
+      } else {
+        window.location.href = "/";
+      }
     } else {
       setError(result.message ?? "Email atau password salah!");
     }

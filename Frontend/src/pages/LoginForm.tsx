@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaEye, FaEyeSlash, FaHotel, FaExclamationCircle } from "react-icons/fa";
 import { useAuth } from "./AuthContext";
-import { users } from "../data/spkData";
 
 export default function LoginForm() {
   const { login } = useAuth();
@@ -25,17 +24,14 @@ export default function LoginForm() {
 
     setLoading(true);
 
-    // Simulasi delay jaringan
-    await new Promise((r) => setTimeout(r, 600));
-
-    const result = login(email, password, users);
+    const result = await login(email, password);
 
     setLoading(false);
 
     if (result.success) {
       // Arahkan sesuai role
-      const role = result.role ?? "";
-      if (role === "super admin" || role === "admin") {
+      const role = (result.role ?? "").toUpperCase();
+      if (role === "SUPER_ADMIN" || role === "ADMIN" || role === "SUPER ADMIN") {
         navigate("/admin", { replace: true });
       } else {
         navigate("/", { replace: true });

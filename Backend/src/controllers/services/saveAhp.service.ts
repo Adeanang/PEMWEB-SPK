@@ -5,21 +5,21 @@ interface ComparisonInput {
   kriteria2Id: number;
   nilai: number;
 }
-
 export const savePerbandingan = async (
   rekomendasiId: number,
   comparisons: ComparisonInput[]
 ) => {
+  console.log("DELETE");
 
-  // hapus data lama
   await prisma.perbandinganKriteria.deleteMany({
     where: {
       rekomendasiId,
     },
   });
 
-  // simpan data baru
-  await prisma.perbandinganKriteria.createMany({
+  console.log("CREATE");
+
+  const result = await prisma.perbandinganKriteria.createMany({
     data: comparisons.map((item) => ({
       rekomendasiId,
       kriteria1Id: item.kriteria1Id,
@@ -28,5 +28,7 @@ export const savePerbandingan = async (
     })),
   });
 
-  return true;
+  console.log(result);
+
+  return result;
 };

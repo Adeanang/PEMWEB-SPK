@@ -1,11 +1,5 @@
 import { create } from 'zustand';
-import {
-  hotels as initialHotels,
-  users as initialUsers,
-  kategoriHotelList as initialKategori,
-  defaultKriteria as initialKriteria,
-  subKriteriaHarga as initialSubKriteriaHarga,
-} from '../data/spkData';
+import api from '../utils/api';
 import type { Hotel, User, KategoriHotel, Kriteria } from '../types/spk';
 
 export interface AdminSubKriteria {
@@ -57,82 +51,6 @@ export interface RekomendasiRequest {
   createdAt: string;
 }
 
-
-const criteriaKeyToId: Record<string, number> = {
-  harga: 1, jarak: 2, rating: 3, fasilitas: 4, kebersihan: 5, pelayanan: 6,
-};
-
-function genHotelKriterias(): HotelKriteria[] {
-  const result: HotelKriteria[] = [];
-  let id = 1;
-  initialHotels.forEach((hotel) => {
-    Object.entries(hotel.nilai).forEach(([key, nilai]) => {
-      const kriteriaId = criteriaKeyToId[key];
-      if (kriteriaId) result.push({ id: id++, hotelId: hotel.id, kriteriaId, nilai: nilai as number });
-    });
-  });
-  return result;
-}
-
-function genFasilitas(): FasilitasHotel[] {
-  const result: FasilitasHotel[] = [];
-  let id = 1;
-  initialHotels.forEach((h) => h.fasilitas_list.forEach((f) => result.push({ id: id++, hotelId: h.id, fasilitas: f })));
-  return result;
-}
-
-
-const initialSubKriterias: AdminSubKriteria[] = initialSubKriteriaHarga.map((s, i) => ({
-  id: i + 1,
-  kriteriaId: s.kriteria_id,
-  value: s.value,
-  skor: 4 - i,
-}));
-
-const initialKategoriKamars: KategoriKamar[] = [
-  { id: 1, hotelId: 1, namaKategori: 'Deluxe', deskripsi: 'Kamar deluxe dengan pemandangan kota', kapasitasOrang: '2' },
-  { id: 2, hotelId: 1, namaKategori: 'Suite', deskripsi: 'Kamar suite premium dengan ruang tamu', kapasitasOrang: '3' },
-  { id: 3, hotelId: 2, namaKategori: 'Standard', deskripsi: 'Kamar standar nyaman dan bersih', kapasitasOrang: '2' },
-  { id: 4, hotelId: 2, namaKategori: 'Junior Suite', deskripsi: 'Junior suite dengan fasilitas lengkap', kapasitasOrang: '2' },
-  { id: 5, hotelId: 3, namaKategori: 'Standard', deskripsi: 'Kamar standar dengan desain heritage', kapasitasOrang: '2' },
-];
-
-const initialKamars: Kamar[] = [
-  { id: 1, hotelId: 1, kategoriId: 1, nomorKamar: '101' },
-  { id: 2, hotelId: 1, kategoriId: 1, nomorKamar: '102' },
-  { id: 3, hotelId: 1, kategoriId: 2, nomorKamar: '201' },
-  { id: 4, hotelId: 2, kategoriId: 3, nomorKamar: '101' },
-  { id: 5, hotelId: 2, kategoriId: 3, nomorKamar: '102' },
-  { id: 6, hotelId: 2, kategoriId: 4, nomorKamar: '201' },
-  { id: 7, hotelId: 3, kategoriId: 5, nomorKamar: '101' },
-];
-
-const initialRekomendasiRequests: RekomendasiRequest[] = [
-  { id: 1, userId: 3, kategoriHotelId: 4, createdAt: '2025-06-01T08:30:00Z' },
-  { id: 2, userId: null, kategoriHotelId: 3, createdAt: '2025-06-05T10:15:00Z' },
-  { id: 3, userId: 3, kategoriHotelId: 5, createdAt: '2025-06-10T14:00:00Z' },
-  { id: 4, userId: null, kategoriHotelId: 2, createdAt: '2025-06-15T09:45:00Z' },
-  { id: 5, userId: 3, kategoriHotelId: 4, createdAt: '2025-06-20T11:30:00Z' },
-  { id: 6, userId: null, kategoriHotelId: 3, createdAt: '2025-07-01T13:00:00Z' },
-  { id: 7, userId: 3, kategoriHotelId: 5, createdAt: '2025-07-05T16:00:00Z' },
-];
-
-
-const nextId = {
-  hotel: Math.max(...initialHotels.map((h) => h.id)) + 1,
-  user: Math.max(...initialUsers.map((u) => u.id)) + 1,
-  kategoriHotel: Math.max(...initialKategori.map((k) => k.id)) + 1,
-  kriteria: Math.max(...initialKriteria.map((k) => k.id_kriteria)) + 1,
-  subKriteria: initialSubKriterias.length + 1,
-  kategoriKamar: initialKategoriKamars.length + 1,
-  kamar: initialKamars.length + 1,
-  fasilitas: genFasilitas().length + 1,
-  hotelKriteria: genHotelKriterias().length + 1,
-  perbandingan: 1,
-  rekomendasi: initialRekomendasiRequests.length + 1,
-};
-
-
 interface AdminStore {
   hotels: Hotel[];
   users: User[];
@@ -143,121 +61,380 @@ interface AdminStore {
   kamars: Kamar[];
   fasilitasHotels: FasilitasHotel[];
   hotelKriterias: HotelKriteria[];
-  perbandinganKriterias: PerbandinganKriteria[];
   rekomendasiRequests: RekomendasiRequest[];
 
+  isFetching: boolean;
+  fetchAdminData: () => Promise<void>;
+
   // Hotel CRUD
-  addHotel: (h: Omit<Hotel, 'id'>) => void;
-  updateHotel: (id: number, h: Partial<Hotel>) => void;
-  deleteHotel: (id: number) => void;
+  addHotel: (h: Omit<Hotel, 'id'>) => Promise<void>;
+  updateHotel: (id: number, h: Partial<Hotel>) => Promise<void>;
+  deleteHotel: (id: number) => Promise<void>;
 
   // User CRUD
-  addUser: (u: Omit<User, 'id'>) => void;
-  updateUser: (id: number, u: Partial<User>) => void;
-  deleteUser: (id: number) => void;
+  addUser: (u: Omit<User, 'id'>) => Promise<void>;
+  updateUser: (id: number, u: Partial<User>) => Promise<void>;
+  deleteUser: (id: number) => Promise<void>;
 
   // KategoriHotel CRUD
-  addKategoriHotel: (k: Omit<KategoriHotel, 'id'>) => void;
-  updateKategoriHotel: (id: number, k: Partial<KategoriHotel>) => void;
-  deleteKategoriHotel: (id: number) => void;
+  addKategoriHotel: (k: Omit<KategoriHotel, 'id'>) => Promise<void>;
+  updateKategoriHotel: (id: number, k: Partial<KategoriHotel>) => Promise<void>;
+  deleteKategoriHotel: (id: number) => Promise<void>;
 
   // Kriteria CRUD
-  addKriteria: (k: Omit<Kriteria, 'id_kriteria'>) => void;
-  updateKriteria: (id: number, k: Partial<Kriteria>) => void;
-  deleteKriteria: (id: number) => void;
+  addKriteria: (k: Omit<Kriteria, 'id_kriteria'>) => Promise<void>;
+  updateKriteria: (id: number, k: Partial<Kriteria>) => Promise<void>;
+  deleteKriteria: (id: number) => Promise<void>;
 
   // SubKriteria CRUD
-  addSubKriteria: (s: Omit<AdminSubKriteria, 'id'>) => void;
-  updateSubKriteria: (id: number, s: Partial<AdminSubKriteria>) => void;
-  deleteSubKriteria: (id: number) => void;
+  addSubKriteria: (s: Omit<AdminSubKriteria, 'id'>) => Promise<void>;
+  updateSubKriteria: (id: number, s: Partial<AdminSubKriteria>) => Promise<void>;
+  deleteSubKriteria: (id: number) => Promise<void>;
 
   // KategoriKamar CRUD
-  addKategoriKamar: (k: Omit<KategoriKamar, 'id'>) => void;
-  updateKategoriKamar: (id: number, k: Partial<KategoriKamar>) => void;
-  deleteKategoriKamar: (id: number) => void;
+  addKategoriKamar: (k: Omit<KategoriKamar, 'id'>) => Promise<void>;
+  updateKategoriKamar: (id: number, k: Partial<KategoriKamar>) => Promise<void>;
+  deleteKategoriKamar: (id: number) => Promise<void>;
 
   // Kamar CRUD
-  addKamar: (k: Omit<Kamar, 'id'>) => void;
-  updateKamar: (id: number, k: Partial<Kamar>) => void;
-  deleteKamar: (id: number) => void;
+  addKamar: (k: Omit<Kamar, 'id'>) => Promise<void>;
+  updateKamar: (id: number, k: Partial<Kamar>) => Promise<void>;
+  deleteKamar: (id: number) => Promise<void>;
 
   // FasilitasHotel CRUD
-  addFasilitas: (f: Omit<FasilitasHotel, 'id'>) => void;
-  updateFasilitas: (id: number, f: Partial<FasilitasHotel>) => void;
-  deleteFasilitas: (id: number) => void;
+  addFasilitas: (f: Omit<FasilitasHotel, 'id'>) => Promise<void>;
+  updateFasilitas: (id: number, f: Partial<FasilitasHotel>) => Promise<void>;
+  deleteFasilitas: (id: number) => Promise<void>;
 
   // HotelKriteria CRUD
-  addHotelKriteria: (hk: Omit<HotelKriteria, 'id'>) => void;
-  updateHotelKriteria: (id: number, hk: Partial<HotelKriteria>) => void;
-  deleteHotelKriteria: (id: number) => void;
-
-  // PerbandinganKriteria CRUD
-  addPerbandingan: (p: Omit<PerbandinganKriteria, 'id'>) => void;
-  updatePerbandingan: (id: number, p: Partial<PerbandinganKriteria>) => void;
-  deletePerbandingan: (id: number) => void;
+  addHotelKriteria: (hk: Omit<HotelKriteria, 'id'>) => Promise<void>;
+  updateHotelKriteria: (id: number, hk: Partial<HotelKriteria>) => Promise<void>;
+  deleteHotelKriteria: (id: number) => Promise<void>;
 }
 
-
-export const useAdminStore = create<AdminStore>((set) => ({
-  hotels: [...initialHotels],
-  users: [...initialUsers],
-  kategoriHotels: [...initialKategori],
-  kriterias: [...initialKriteria],
-  subKriterias: [...initialSubKriterias],
-  kategoriKamars: [...initialKategoriKamars],
-  kamars: [...initialKamars],
-  fasilitasHotels: genFasilitas(),
-  hotelKriterias: genHotelKriterias(),
+export const useAdminStore = create<AdminStore>((set, get) => ({
+  hotels: [],
+  users: [],
+  kategoriHotels: [],
+  kriterias: [],
+  subKriterias: [],
+  kategoriKamars: [],
+  kamars: [],
+  fasilitasHotels: [],
+  hotelKriterias: [],
   perbandinganKriterias: [],
-  rekomendasiRequests: [...initialRekomendasiRequests],
+  rekomendasiRequests: [],
+  isFetching: false,
 
-  // Hotel
-  addHotel: (h) => set((s) => ({ hotels: [...s.hotels, { ...h, id: nextId.hotel++ }] })),
-  updateHotel: (id, h) => set((s) => ({ hotels: s.hotels.map((x) => (x.id === id ? { ...x, ...h } : x)) })),
-  deleteHotel: (id) => set((s) => ({ hotels: s.hotels.filter((x) => x.id !== id) })),
+  fetchAdminData: async () => {
+    set({ isFetching: true });
+    try {
+      const [
+        hotelsRes,
+        usersRes,
+        kategoriRes,
+        kriteriaRes,
+        subKriteriaRes,
+        kamarRes,
+        fasilitasRes,
+        hotelKriteriaRes
+      ] = await Promise.allSettled([
+        api.get('/hotels'),
+        api.get('/users'),
+        api.get('/kategori'),
+        api.get('/kriteria'),
+        api.get('/sub-kriteria'),
+        api.get('/kamar'),
+        api.get('/fasilitas-hotel'),
+        api.get('/hotel-kriteria'),
+      ]);
 
-  // User
-  addUser: (u) => set((s) => ({ users: [...s.users, { ...u, id: nextId.user++ }] })),
-  updateUser: (id, u) => set((s) => ({ users: s.users.map((x) => (x.id === id ? { ...x, ...u } : x)) })),
-  deleteUser: (id) => set((s) => ({ users: s.users.filter((x) => x.id !== id) })),
+      const stateUpdate: Partial<AdminStore> = {};
 
-  // KategoriHotel
-  addKategoriHotel: (k) => set((s) => ({ kategoriHotels: [...s.kategoriHotels, { ...k, id: nextId.kategoriHotel++ }] })),
-  updateKategoriHotel: (id, k) => set((s) => ({ kategoriHotels: s.kategoriHotels.map((x) => (x.id === id ? { ...x, ...k } : x)) })),
-  deleteKategoriHotel: (id) => set((s) => ({ kategoriHotels: s.kategoriHotels.filter((x) => x.id !== id) })),
+      if (kriteriaRes.status === 'fulfilled' && kriteriaRes.value.data.data) {
+        stateUpdate.kriterias = kriteriaRes.value.data.data.map((k: any) => {
+          const keyMap: any = { "C1": "harga", "C2": "jarak", "C3": "rating", "C4": "fasilitas", "C5": "kebersihan", "C6": "pelayanan" };
+          return {
+            id_kriteria: k.id,
+            kode: k.kode,
+            nama: k.nama,
+            key: keyMap[k.kode] || k.nama.toLowerCase(),
+            tipe: k.jenis?.toLowerCase() || 'benefit',
+            bobot: k.bobot
+          };
+        });
+      }
 
-  // Kriteria
-  addKriteria: (k) => set((s) => ({ kriterias: [...s.kriterias, { ...k, id_kriteria: nextId.kriteria++ }] })),
-  updateKriteria: (id, k) => set((s) => ({ kriterias: s.kriterias.map((x) => (x.id_kriteria === id ? { ...x, ...k } : x)) })),
-  deleteKriteria: (id) => set((s) => ({ kriterias: s.kriterias.filter((x) => x.id_kriteria !== id) })),
+      if (hotelsRes.status === 'fulfilled' && hotelsRes.value.data.data) {
+        stateUpdate.hotels = hotelsRes.value.data.data.map((h: any) => {
+          const nilai: any = { harga: 0, jarak: 0, rating: 0, fasilitas: 0, kebersihan: 0, pelayanan: 0 };
+          if (h.hotelKriterias) {
+            h.hotelKriterias.forEach((hk: any) => {
+              const keyMap: any = { "C1": "harga", "C2": "jarak", "C3": "rating", "C4": "fasilitas", "C5": "kebersihan", "C6": "pelayanan" };
+              const key = keyMap[hk.kriteria?.kode] || hk.kriteria?.nama?.toLowerCase();
+              if (key && key in nilai) {
+                nilai[key] = hk.nilai || 0;
+              }
+            });
+          }
+          return {
+            id: h.id,
+            name: h.name,
+            location: h.location,
+            sosial_media: h.sosialMedia,
+            image_hotel: h.imageHotel?.trim() || null,
+            id_user: h.userId,
+            lat: h.lat,
+            lng: h.lng,
+            id_kategori_hotel: h.kategoriHotelId,
+            nilai,
+            fasilitas_list: h.fasilitasHotels
+              ? h.fasilitasHotels
+                .map((f: any) => f.fasilitas || f.nama_fasilitas)
+                .filter(Boolean)
+              : [],
+          };
+        });
+      }
 
-  // SubKriteria
-  addSubKriteria: (sv) => set((s) => ({ subKriterias: [...s.subKriterias, { ...sv, id: nextId.subKriteria++ }] })),
-  updateSubKriteria: (id, sv) => set((s) => ({ subKriterias: s.subKriterias.map((x) => (x.id === id ? { ...x, ...sv } : x)) })),
-  deleteSubKriteria: (id) => set((s) => ({ subKriterias: s.subKriterias.filter((x) => x.id !== id) })),
+      if (usersRes.status === 'fulfilled' && usersRes.value.data.data) {
+        stateUpdate.users = usersRes.value.data.data;
+      }
 
-  // KategoriKamar
-  addKategoriKamar: (k) => set((s) => ({ kategoriKamars: [...s.kategoriKamars, { ...k, id: nextId.kategoriKamar++ }] })),
-  updateKategoriKamar: (id, k) => set((s) => ({ kategoriKamars: s.kategoriKamars.map((x) => (x.id === id ? { ...x, ...k } : x)) })),
-  deleteKategoriKamar: (id) => set((s) => ({ kategoriKamars: s.kategoriKamars.filter((x) => x.id !== id) })),
+      if (kategoriRes.status === 'fulfilled' && kategoriRes.value.data.data) {
+        stateUpdate.kategoriHotels = kategoriRes.value.data.data.map((k: any) => ({
+          id: k.id,
+          nama_kategori: k.namaKategori || k.nama_kategori || '',
+          deskripsi: k.deskripsi || ''
+        }));
+      }
 
-  // Kamar
-  addKamar: (k) => set((s) => ({ kamars: [...s.kamars, { ...k, id: nextId.kamar++ }] })),
-  updateKamar: (id, k) => set((s) => ({ kamars: s.kamars.map((x) => (x.id === id ? { ...x, ...k } : x)) })),
-  deleteKamar: (id) => set((s) => ({ kamars: s.kamars.filter((x) => x.id !== id) })),
+      if (subKriteriaRes.status === 'fulfilled' && subKriteriaRes.value.data.data) {
+        stateUpdate.subKriterias = subKriteriaRes.value.data.data;
+      }
 
-  // FasilitasHotel
-  addFasilitas: (f) => set((s) => ({ fasilitasHotels: [...s.fasilitasHotels, { ...f, id: nextId.fasilitas++ }] })),
-  updateFasilitas: (id, f) => set((s) => ({ fasilitasHotels: s.fasilitasHotels.map((x) => (x.id === id ? { ...x, ...f } : x)) })),
-  deleteFasilitas: (id) => set((s) => ({ fasilitasHotels: s.fasilitasHotels.filter((x) => x.id !== id) })),
+      if (kamarRes.status === 'fulfilled' && kamarRes.value.data.data) {
+        stateUpdate.kamars = kamarRes.value.data.data;
+      }
 
-  // HotelKriteria
-  addHotelKriteria: (hk) => set((s) => ({ hotelKriterias: [...s.hotelKriterias, { ...hk, id: nextId.hotelKriteria++ }] })),
-  updateHotelKriteria: (id, hk) => set((s) => ({ hotelKriterias: s.hotelKriterias.map((x) => (x.id === id ? { ...x, ...hk } : x)) })),
-  deleteHotelKriteria: (id) => set((s) => ({ hotelKriterias: s.hotelKriterias.filter((x) => x.id !== id) })),
+      if (fasilitasRes.status === 'fulfilled' && fasilitasRes.value.data.data) {
+        stateUpdate.fasilitasHotels = fasilitasRes.value.data.data;
+      }
 
-  // PerbandinganKriteria
-  addPerbandingan: (p) => set((s) => ({ perbandinganKriterias: [...s.perbandinganKriterias, { ...p, id: nextId.perbandingan++ }] })),
-  updatePerbandingan: (id, p) => set((s) => ({ perbandinganKriterias: s.perbandinganKriterias.map((x) => (x.id === id ? { ...x, ...p } : x)) })),
-  deletePerbandingan: (id) => set((s) => ({ perbandinganKriterias: s.perbandinganKriterias.filter((x) => x.id !== id) })),
+      if (hotelKriteriaRes.status === 'fulfilled' && hotelKriteriaRes.value.data.data) {
+        stateUpdate.hotelKriterias = hotelKriteriaRes.value.data.data;
+      }
+
+      set(stateUpdate);
+    } catch (error) {
+      console.error("Error fetching admin data:", error);
+    } finally {
+      set({ isFetching: false });
+    }
+  },
+
+  // Hotel CRUD
+  addHotel: async (h) => {
+    // Transform to backend format
+    const { kriterias } = get();
+    const kriteriaPayload = h.nilai ? Object.entries(h.nilai).map(([key, val]) => {
+      const k = kriterias.find(k => k.key === key);
+      return k ? { kriteriaId: k.id_kriteria, nilai: val } : null;
+    }).filter(Boolean) : [];
+
+    const payload = {
+      name: h.name,
+      location: h.location,
+      sosialMedia: h.sosial_media,
+      imageHotel: h.image_hotel,
+      userId: h.id_user,
+      lat: h.lat,
+      lng: h.lng,
+      kategoriHotelId: h.id_kategori_hotel,
+      kriteria: kriteriaPayload,
+    };
+
+    const res = await api.post('/hotels', payload);
+    const hotelId = res.data.data.id;
+
+    if (h.fasilitas_list && h.fasilitas_list.length > 0) {
+      await Promise.allSettled(
+        h.fasilitas_list.map(f => api.post('/fasilitas-hotel', { hotelId, nama_fasilitas: f }))
+      );
+    }
+
+    await get().fetchAdminData();
+  },
+  updateHotel: async (id, h) => {
+    const payload: any = {};
+    if (h.name !== undefined) payload.name = h.name;
+    if (h.location !== undefined) payload.location = h.location;
+    if (h.sosial_media !== undefined) payload.sosialMedia = h.sosial_media;
+    if (h.image_hotel !== undefined) payload.imageHotel = h.image_hotel;
+    if (h.id_user !== undefined) payload.userId = h.id_user;
+    if (h.lat !== undefined) payload.lat = h.lat;
+    if (h.lng !== undefined) payload.lng = h.lng;
+    if (h.id_kategori_hotel !== undefined) payload.kategoriHotelId = h.id_kategori_hotel;
+
+    await api.put(`/hotels/${id}`, payload);
+
+    if (h.nilai) {
+      const { kriterias, hotelKriterias } = get();
+      const existingHk = hotelKriterias.filter(hk => hk.hotelId === id);
+
+      const updatePromises = Object.entries(h.nilai).map(([key, val]) => {
+        const k = kriterias.find(k => k.key === key);
+        if (!k) return null;
+        const hk = existingHk.find(x => x.kriteriaId === k.id_kriteria);
+        if (hk) {
+          return api.put(`/hotel-kriteria/${hk.id}`, { hotelId: id, kriteriaId: k.id_kriteria, nilai: val });
+        } else {
+          return api.post('/hotel-kriteria', { hotelId: id, kriteriaId: k.id_kriteria, nilai: val });
+        }
+      }).filter(Boolean);
+
+      await Promise.allSettled(updatePromises as any);
+    }
+
+    if (h.fasilitas_list !== undefined) {
+      const { fasilitasHotels } = get();
+      const existingFasilitas = fasilitasHotels.filter(f => f.hotelId === id);
+      // Simplify: delete all existing, then add new ones
+      await Promise.allSettled(existingFasilitas.map(f => api.delete(`/fasilitas-hotel/${f.id}`)));
+      if (h.fasilitas_list.length > 0) {
+        await Promise.allSettled(h.fasilitas_list.map(f => api.post('/fasilitas-hotel', { hotelId: id, nama_fasilitas: f })));
+      }
+    }
+
+    await get().fetchAdminData();
+  },
+  deleteHotel: async (id) => {
+    await api.delete(`/hotels/${id}`);
+    await get().fetchAdminData();
+  },
+
+  // User CRUD
+  addUser: async (u) => {
+    await api.post('/auth/register', { name: u.email.split('@')[0], email: u.email, password: "password123", role: u.role });
+    await get().fetchAdminData();
+  },
+  updateUser: async (id, u) => {
+    await api.put(`/users/${id}`, u);
+    await get().fetchAdminData();
+  },
+  deleteUser: async (id) => {
+    await api.delete(`/users/${id}`);
+    await get().fetchAdminData();
+  },
+  // KategoriHotel CRUD
+  addKategoriHotel: async (k) => {
+    await api.post('/kategori', {
+      namaKategori: k.nama_kategori,
+    });
+
+    await get().fetchAdminData();
+  },
+
+  updateKategoriHotel: async (id, k) => {
+    await api.put(`/kategori/${id}`, {
+      namaKategori: k.nama_kategori,
+    });
+
+    await get().fetchAdminData();
+  },
+
+  deleteKategoriHotel: async (id) => {
+    await api.delete(`/kategori/${id}`);
+    await get().fetchAdminData();
+  },
+  // Kriteria CRUD
+  addKriteria: async (k) => {
+    await api.post('/kriteria', { kode: k.kode, nama: k.nama, bobot: k.bobot, jenis: k.tipe.toUpperCase() });
+    await get().fetchAdminData();
+  },
+  updateKriteria: async (id, k) => {
+    const payload: any = {};
+    if (k.kode !== undefined) payload.kode = k.kode;
+    if (k.nama !== undefined) payload.nama = k.nama;
+    if (k.bobot !== undefined) payload.bobot = k.bobot;
+    if (k.tipe !== undefined) payload.jenis = k.tipe.toUpperCase();
+    await api.put(`/kriteria/${id}`, payload);
+    await get().fetchAdminData();
+  },
+  deleteKriteria: async (id) => {
+    await api.delete(`/kriteria/${id}`);
+    await get().fetchAdminData();
+  },
+
+  // SubKriteria CRUD
+  addSubKriteria: async (s) => {
+    await api.post('/sub-kriteria', s);
+    await get().fetchAdminData();
+  },
+  updateSubKriteria: async (id, s) => {
+    await api.put(`/sub-kriteria/${id}`, s);
+    await get().fetchAdminData();
+  },
+  deleteSubKriteria: async (id) => {
+    await api.delete(`/sub-kriteria/${id}`);
+    await get().fetchAdminData();
+  },
+
+  // KategoriKamar CRUD
+  addKategoriKamar: async (k) => {
+    await api.post('/kategori-kamar', k);
+    await get().fetchAdminData();
+  },
+  updateKategoriKamar: async (id, k) => {
+    await api.put(`/kategori-kamar/${id}`, k);
+    await get().fetchAdminData();
+  },
+  deleteKategoriKamar: async (id) => {
+    await api.delete(`/kategori-kamar/${id}`);
+    await get().fetchAdminData();
+  },
+
+  // Kamar CRUD
+  addKamar: async (k) => {
+    await api.post('/kamar', k);
+    await get().fetchAdminData();
+  },
+  updateKamar: async (id, k) => {
+    await api.put(`/kamar/${id}`, k);
+    await get().fetchAdminData();
+  },
+  deleteKamar: async (id) => {
+    await api.delete(`/kamar/${id}`);
+    await get().fetchAdminData();
+  },
+
+  // FasilitasHotel CRUD
+  addFasilitas: async (f) => {
+    await api.post('/fasilitas-hotel', { hotelId: f.hotelId, nama_fasilitas: f.fasilitas });
+    await get().fetchAdminData();
+  },
+  updateFasilitas: async (id, f) => {
+    await api.put(`/fasilitas-hotel/${id}`, { hotelId: f.hotelId, nama_fasilitas: f.fasilitas });
+    await get().fetchAdminData();
+  },
+  deleteFasilitas: async (id) => {
+    await api.delete(`/fasilitas-hotel/${id}`);
+    await get().fetchAdminData();
+  },
+
+  // HotelKriteria CRUD
+  addHotelKriteria: async (hk) => {
+    await api.post('/hotel-kriteria', hk);
+    await get().fetchAdminData();
+  },
+  updateHotelKriteria: async (id, hk) => {
+    await api.put(`/hotel-kriteria/${id}`, hk);
+    await get().fetchAdminData();
+  },
+  deleteHotelKriteria: async (id) => {
+    await api.delete(`/hotel-kriteria/${id}`);
+    await get().fetchAdminData();
+  },
+
+  // PerbandinganKriteria CRUD
 }));
